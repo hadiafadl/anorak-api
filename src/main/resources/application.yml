@@ -1,0 +1,9 @@
+
+spring:
+  application.name: Anorak-API
+  cloud:
+    gcp:
+      credentials:
+        location: classpath:private-key.json
+      firestore:
+        project-id: anorak-api
