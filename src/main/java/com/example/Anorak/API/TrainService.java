@@ -6,6 +6,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -49,65 +50,128 @@ public class TrainService {
         return sightings;
     }
 
-    public void saveTrain(Train train){
-        trainRepository.save(train);
-    }
-
-    public void saveSighting(Sighting sighting){
-        sightingRepository.save(sighting);
-    }
-
-    public void saveStation(Station station){
-        stationRepository.save(station);
+    public Train saveTrain(Train train){
+        return trainRepository.save(train).block();
     }
 
 
-    public List<String> validateInput(List<Sighting> sightings){
+    public Station saveStation(Station station){
+        return stationRepository.save(station).block();
+    }
+
+
+    public List<String> validateTrain(Train train){
         List<String> errors = new ArrayList<>();
-        for (Sighting sighting : sightings){
-            Train train = sighting.getTrain();
-            Station station = sighting.getStation();
+        if (train == null){
+            errors.add("Train is missing");
+            return errors;
+        }
 
+        if (train.getName().length()< 2 || train.getName().length()>100){
+            errors.add("Train name must be between 2 and 100 characters");
+        }
 
-            if (train ==  null){
-                errors.add("Train is missing.");
+        if (train.getColour() == null || train.getColour().isBlank()){
+            errors.add("Train colour is missing");
+        }
 
-            }
-            if (station == null){
-                errors.add("Station is missing.");
-            }
-            String trainName = train.getName();
-            if (trainName.length() < 2 || trainName.length() > 100){
-                errors.add("Train name must be between 2 and 100 characters.");
-            }
-            String colour = train.getColour();
-            if (colour == null || colour.isBlank()){
-                errors.add("Colour is missing.");
-            }
+        if (train.getTrainNumber() == null || train.getTrainNumber().isBlank()){
+            errors.add("Train number is missing");
+        }
 
-            String trainNumber = train.getTrainNumber();
-            if (trainNumber == null){
-                errors.add("Train number is missing.");
-            }
+        return errors;
+    }
 
-            String stationName = station.getName();
-            if (stationName == null){
-                errors.add("Station name is missing.");
+    public List<String> validateStation(Station station){
+        List<String> errors = new ArrayList<>();
+        if (station == null){
+            errors.add("Station is missing");
+            return errors;
+        }
+
+        if (station.getName() == null || station.getName().isBlank()){
+            errors.add("Station name is missing");
+        }
+
+        return errors;
+    }
+
+    public List<String> validateTimestamp(Instant timestamp){
+        List<String> errors = new ArrayList<>();
+
+        if (timestamp == null){
+            errors.add("Timestamp is missing");
+        }
+        else{
+            Instant now = Instant.now();
+            if (timestamp.isAfter(now)){
+                errors.add("Sighting timestamp cannot be in the future");
             }
         }
         return errors;
+
     }
+
+    public List<String> validateSightings(Sighting sighting){
+        List<String> errors = new ArrayList<>();
+
+        errors.addAll(validateTrain(sighting.getTrain()));
+        errors.addAll(validateStation(sighting.getStation()));
+        errors.addAll(validateTimestamp(sighting.getTimestamp()));
+
+        return errors;
+    }
+
 
     public Train getTrainByTrainNumber(String trainNumber){
         return trainRepository.findByTrainNumber(trainNumber).blockFirst();
     }
 
     public Station getStationByStationName(String stationName){
-        return stationRepository.findByStationName(stationName).blockFirst();
+        return stationRepository.findByName(stationName).blockFirst();
     }
 
+    private Sighting saveSighting(Sighting sighting){
+        Train train = getTrainByTrainNumber(sighting.getTrain().getTrainNumber());
+        Station station = getStationByStationName(sighting.getStation().getName());
 
-    public 
+        if (train == null){
+            train = saveTrain(sighting.getTrain());
+        }
+
+        if (station == null){
+            station = saveStation(sighting.getStation());
+        }
+        Instant timestamp = sighting.getTimestamp();
+
+        Sighting finalSighting = new Sighting(station, train, timestamp);
+        return  sightingRepository.save(finalSighting).block();
+    }
+
+    public List<Sighting> saveSightings(List<Sighting> sightings) {
+        List<Sighting> savedSightings = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+
+
+        for (Sighting sighting : sightings) {
+            try {
+                List<String> validationErrors = validateSightings(sighting);
+                if (!validationErrors.isEmpty()) {
+                    errors.addAll(validationErrors);
+                    continue;
+                }
+
+                Sighting savedSighting = saveSighting(sighting);
+                savedSightings.add(savedSighting);
+            } catch (Exception e) {
+                errors.add(e.getMessage());
+            }
+        }
+        if (!errors.isEmpty()) {
+            throw new PartialSaveException(savedSightings, errors);
+        }
+        return savedSightings;
+    }
 
 
 

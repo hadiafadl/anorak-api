@@ -1,9 +1,7 @@
 package com.example.Anorak.API;
 
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -34,5 +32,15 @@ public class TrainController {
 
     public List<Sighting> getSightings(@PathVariable String id){
         return trainService.getSightingsForTrain(id);
+    }
+
+    @PostMapping("/sightings")
+    public List<Sighting> addSightings(@RequestBody List<Sighting> sightings){
+        return trainService.saveSightings(sightings);
+    }
+
+    @GetMapping("/sightings")
+    public List<Sighting> getSightings(){
+        return sightingService.getAllSightings();
     }
 }

@@ -7,5 +7,5 @@ import reactor.core.publisher.Flux;
 
 @Repository
 public interface StationRepository extends FirestoreReactiveRepository<Station> {
-    Flux<Station> findByStationName(String trainNumber);
+    Flux<Station> findByName(String name);
 }

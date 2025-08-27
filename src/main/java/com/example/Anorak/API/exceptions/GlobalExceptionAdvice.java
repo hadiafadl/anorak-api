@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionAdvice {
@@ -66,6 +67,25 @@ public class GlobalExceptionAdvice {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse stationNameInvalidHandler(StationNameInvalidException ex){
         return new ErrorResponse("E0067", "Station name not valid", List.of(ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidSightingException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse invalidSightingHandler(InvalidSightingException ex) {
+        return new ErrorResponse(
+                "E400",
+                ex.getMessage(),
+                ex.getErrors()
+        );
+    }
+
+    @ExceptionHandler(PartialSaveException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Map<String, Object> handlePartialSave(PartialSaveException ex) {
+        return Map.of(
+                "savedSightings", ex.getSavedSightings(),
+                "errors", ex.getErrors()
+        );
     }
 
 
