@@ -16,9 +16,12 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -89,7 +92,7 @@ class TrainServiceTests {
     @Test
     public void returnError_whenGetTrainByInvalidId_thenStatus404() throws Exception {
 
-        when(trainService.getTrainById("id-003")).thenThrow(TrainNotFoundException.class);
+        when(trainService.getTrainById("id-003")).thenThrow(new TrainNotFoundException("id-003"));
 
         mvc.perform(MockMvcRequestBuilders.get("/train/id-003")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -121,6 +124,68 @@ class TrainServiceTests {
                 .andExpect(jsonPath("$[0].train.colour").value("Blue"))
                 .andExpect(jsonPath("$[0].train.trainNumber").value("ABC123"));
     }
+
+
+    @Test
+    public void returnError_whenGetSightingsByInvalidTrain_thenStatus404() throws Exception {
+
+
+        when(trainService.getSightingsForTrain("123"))
+                .thenThrow(new TrainNotFoundException("123"));
+
+        mvc.perform(MockMvcRequestBuilders.get("/train/123/sightings")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void returnEmptyList_whenGetSightingsByTrain_thenStatus200() throws Exception {
+        List<Sighting> sightings = new ArrayList<>();
+
+        when(trainService.getSightingsForTrain("123")).thenReturn(sightings);
+
+        mvc.perform(MockMvcRequestBuilders.get("/train/123/sightings")
+        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
+
+    }
+
+    @Test
+    public void returnEmptyList_whenGetTrains_theStatus200() throws Exception {
+        List<Train> trains = new ArrayList<>();
+        when(trainService.getAllTrains()).thenReturn(trains);
+
+        mvc.perform(MockMvcRequestBuilders.get("/train")
+        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    public void returnEmptyList_whenValidStation(){
+        Station station = new Station("Liverpool Street");
+        List<String> errors = new ArrayList<>(trainService.validateStation(station));
+
+        assertTrue(errors.isEmpty());
+    }
+
+    @Test
+    public void returnErrorsList_whenInvalidStation(){
+        Station station = new Station();
+        station.setName(null);
+        List<String> errors = new ArrayList<>(trainService.validateStation(station));
+
+        assertEquals("Station name is missing", errors.get(0));
+    }
+
+
+
+
+
+
 
 
 

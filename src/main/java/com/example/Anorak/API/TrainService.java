@@ -38,6 +38,10 @@ public class TrainService {
     public List<Sighting> getSightingsForTrain(String trainId){
         Train train = trainRepository.findById(trainId).block();
 
+        if (train == null){
+            throw new TrainNotFoundException(trainId);
+        }
+
         Flux<Sighting> sightingsFlux = sightingRepository.findByTrainId(trainId);
         List<Sighting> sightings = sightingsFlux.collectList().block();
 
@@ -51,11 +55,19 @@ public class TrainService {
     }
 
     public Train saveTrain(Train train){
+        List<String> errors = new ArrayList<>(validateTrain(train));
+        if (!errors.isEmpty()){
+            throw new SchemaValidationException(errors);
+        }
         return trainRepository.save(train).block();
     }
 
 
     public Station saveStation(Station station){
+        List<String> errors = new ArrayList<>(validateStation(station));
+        if (!errors.isEmpty()) {
+            throw new SchemaValidationException(errors);
+        }
         return stationRepository.save(station).block();
     }
 
@@ -162,12 +174,17 @@ public class TrainService {
                 }
 
                 Sighting savedSighting = saveSighting(sighting);
+                savedSighting.setTrain(sighting.getTrain());
+                savedSighting.setStation(sighting.getStation());
                 savedSightings.add(savedSighting);
             } catch (Exception e) {
                 errors.add(e.getMessage());
             }
         }
         if (!errors.isEmpty()) {
+            if (savedSightings.isEmpty()) {
+                throw new SchemaValidationException(errors);
+            }
             throw new PartialSaveException(savedSightings, errors);
         }
         return savedSightings;

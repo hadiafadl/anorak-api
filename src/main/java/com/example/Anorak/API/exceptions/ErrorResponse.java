@@ -1,5 +1,6 @@
 package com.example.Anorak.API.exceptions;
 
+import java.util.Collections;
 import java.util.List;
 
 public class ErrorResponse {
@@ -8,6 +9,12 @@ public class ErrorResponse {
     private String message;
     private List<String> errors;
 
+
+    public ErrorResponse(String code, String message){
+        this.code = code;
+        this.message = message;
+        this.errors = Collections.emptyList();
+    }
 
     public ErrorResponse(String code, String message, List<String> errors) {
         this.code = code;

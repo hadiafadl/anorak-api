@@ -1,11 +1,13 @@
 package com.example.Anorak.API.exceptions;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,8 +17,7 @@ public class GlobalExceptionAdvice {
     @ExceptionHandler(TrainNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse traintNotFoundHandler(TrainNotFoundException ex) {
-
-        return new ErrorResponse("E404", ex.getMessage(), Collections.emptyList());
+        return new ErrorResponse("E404", "Train not found", List.of(ex.getMessage()));
     }
 
     @ExceptionHandler(TrainInvalidException.class)
@@ -86,6 +87,14 @@ public class GlobalExceptionAdvice {
                 "savedSightings", ex.getSavedSightings(),
                 "errors", ex.getErrors()
         );
+    }
+
+    @ExceptionHandler(SchemaValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleSchemaValidation(SchemaValidationException ex) {
+        ErrorResponse response = new ErrorResponse("E400", ex.getMessage(), ex.getErrors());
+        return response;
+
     }
 
 
