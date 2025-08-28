@@ -1,6 +1,7 @@
 package com.example.Anorak.API;
 
 import com.example.Anorak.API.Train;
+import com.example.Anorak.API.exceptions.SchemaValidationException;
 import com.example.Anorak.API.exceptions.TrainNotFoundException;
 import com.example.Anorak.API.TrainRepository;
 import com.example.Anorak.API.TrainService;
@@ -18,6 +19,8 @@ import reactor.core.publisher.Mono;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.endsWith;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
@@ -163,6 +166,64 @@ class TrainServiceTests {
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$").isEmpty());
     }
+
+    @Test
+    public void returnStation_whenSaveStation_thenStatus200() throws Exception {
+
+        when(trainService.saveStation(any(Station.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        mvc.perform(MockMvcRequestBuilders.post("/station")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Liverpool Street\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Liverpool Street"));
+    }
+
+    @Test
+    public void returnErrorList_whenSaveInvalidStation_thenStatus400() throws Exception {
+
+        Station station = new Station("");
+        List<String> errors = new ArrayList<>(trainService.validateStation(station));
+        when(trainService.saveStation(any(Station.class)))
+                .thenThrow(new SchemaValidationException(errors));
+
+        mvc.perform(MockMvcRequestBuilders.post("/station")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("{\"name\":\"\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void returnTrain_whenSaveTrain_thenStatus200() throws Exception {
+        when(trainService.saveTrain(any(Train.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        mvc.perform(MockMvcRequestBuilders.post("/train")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Intercity Express\",\"colour\":\"Red\",\"trainNumber\":\"101\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Intercity Express"))
+                .andExpect(jsonPath("$.colour").value("Red"))
+                .andExpect(jsonPath("$.trainNumber").value("101"));
+
+    }
+
+    @Test
+    public void returnError_whenSaveInvalidTrain_thenStatus400() throws Exception {
+        Train train = null;
+        List<String> errors = new ArrayList<>(trainService.validateTrain(train));
+
+        when(trainService.saveTrain(any(Train.class)))
+                .thenThrow(new SchemaValidationException(errors));
+
+        mvc.perform(MockMvcRequestBuilders.post("/train")
+        .contentType(MediaType.APPLICATION_JSON)
+                .content(""))
+                .andExpect(status().isBadRequest());
+    }
+
+
 
 
 }

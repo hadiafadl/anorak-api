@@ -43,4 +43,9 @@ public class TrainController {
     public List<Sighting> getSightings(){
         return sightingService.getAllSightings();
     }
+
+    @PostMapping("/train")
+    public Train addTrain(@RequestBody Train train){
+        return  trainService.saveTrain(train);
+    }
 }

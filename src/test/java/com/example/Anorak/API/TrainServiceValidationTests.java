@@ -179,7 +179,7 @@ public class TrainServiceValidationTests {
         assertEquals(1, errors.size());
         assertEquals("Sighting timestamp cannot be in the future", errors.get(0));
     }
-    
+
 
 
 }
