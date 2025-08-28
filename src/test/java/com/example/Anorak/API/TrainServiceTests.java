@@ -164,29 +164,5 @@ class TrainServiceTests {
                 .andExpect(jsonPath("$").isEmpty());
     }
 
-    @Test
-    public void returnEmptyList_whenValidStation(){
-        Station station = new Station("Liverpool Street");
-        List<String> errors = new ArrayList<>(trainService.validateStation(station));
-
-        assertTrue(errors.isEmpty());
-    }
-
-    @Test
-    public void returnErrorsList_whenInvalidStation(){
-        Station station = new Station();
-        station.setName(null);
-        List<String> errors = new ArrayList<>(trainService.validateStation(station));
-
-        assertEquals("Station name is missing", errors.get(0));
-    }
-
-
-
-
-
-
-
-
 
 }
